@@ -152,4 +152,4 @@ module.exports = (robot) ->
       previousDir = currentDir
       currentDir = newDir
 
-    return msg.send "```\n#{currentDir}\n```"
+    return msg.send "`#{currentDir}`"
