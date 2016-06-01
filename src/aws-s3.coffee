@@ -98,10 +98,10 @@ module.exports = (robot) ->
       cmd = str.split " - "
       cmds.push "`#{cmd[0]}` - #{cmd[1]}"
 
-    if msg.message?.user?.name?
-      msg.send {room: msg.message?.user?.name}, cmds.join "\n"
-    else
-      msg.reply cmds.join "\n"
+    if 0 and msg.message?.user?.name?
+      return msg.send {room: msg.message?.user?.name}, cmds.join "\n"
+    
+    return msg.reply cmds.join "\n"
 
   robot.respond /s3 ls$/i, (msg) ->
     return unless isAuthorized robot, msg
