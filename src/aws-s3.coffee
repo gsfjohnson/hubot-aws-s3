@@ -19,9 +19,10 @@ Table = require 'easy-table'
 moment = require 'moment'
 aws = require 'aws-sdk'
 
-aws.config.accessKeyId = process.env.HUBOT_AWS_S3_ACCESS
-aws.config.secretAccessKey = process.env.HUBOT_AWS_S3_SECRET
-aws.config.region = process.env.HUBOT_AWS_S3_REGION
+if process.env.HUBOT_AWS_S3_ACCESS and process.env.HUBOT_AWS_S3_SECRET and process.env.HUBOT_AWS_S3_REGION
+  aws.config.accessKeyId = process.env.HUBOT_AWS_S3_ACCESS
+  aws.config.secretAccessKey = process.env.HUBOT_AWS_S3_SECRET
+  aws.config.region = process.env.HUBOT_AWS_S3_REGION
 aws.config.logger = process.stdout
 
 modname = authrole = "s3"
@@ -32,10 +33,15 @@ s3 = new aws.S3({apiVersion: '2006-03-01'})
 
 previousDir = currentDir = "/"
 
-isAuthorized = (robot, msg) ->
-  if robot.auth.isAdmin(msg.envelope.user) or robot.auth.hasRole(msg.envelope.user,authrole)
-    return true
-  msg.send {room: msg.message.user.name}, "Not authorized.  Missing `#{authrole}` role."
+isAuthorized = (robot,msg,roles=['admin',authrole]) ->
+  return true if robot.auth.isAdmin(msg.envelope.user)
+  return true if robot.auth.hasRole(msg.envelope.user,roles)
+  msg.send {room: msg.message.user.name}, "Not authorized.  Requires role `#{roles.split '` or `'}`."
+  return false
+
+isSudo = (robot, msg) ->
+  return true if robot.auth.isSudo(msg.envelope.user)
+  msg.send {room: msg.message.user.name}, "Not authorized.  Escalate with `auth sudo`."
   return false
 
 listBuckets = (msg) ->
@@ -100,11 +106,12 @@ module.exports = (robot) ->
 
     if 0 and msg.message?.user?.name?
       return msg.send {room: msg.message?.user?.name}, cmds.join "\n"
-    
+
     return msg.reply cmds.join "\n"
 
   robot.respond /s3 ls$/i, (msg) ->
     return unless isAuthorized robot, msg
+    return unless isSudo robot, msg
 
     if currentDir == '/'
       return listBuckets msg
